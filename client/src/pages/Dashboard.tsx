@@ -1,13 +1,16 @@
 import { useAuth } from "@/_core/hooks/useAuth";
 import { useLocation } from "wouter";
+import { useAuthGuard } from "@/hooks/useAuthGuard";
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { Plus, FileUp, BarChart3, History } from "lucide-react";
+import { Plus, FileUp, BarChart3, History, Loader2 } from "lucide-react";
 import { trpc } from "@/lib/trpc";
 
 export default function Dashboard() {
-  const { user, isAuthenticated } = useAuth();
+  const { user } = useAuth();
   const [, navigate] = useLocation();
+  const { isAuthenticated, isReady } = useAuthGuard("/");
+
   const { data: resumes, isLoading: resumesLoading } = trpc.resume.list.useQuery(undefined, {
     enabled: isAuthenticated,
   });
@@ -15,9 +18,12 @@ export default function Dashboard() {
     enabled: isAuthenticated,
   });
 
-  if (!isAuthenticated) {
-    navigate("/");
-    return null;
+  if (!isReady) {
+    return (
+      <div className="min-h-screen bg-white flex items-center justify-center">
+        <Loader2 className="w-8 h-8 animate-spin text-cyan-600" />
+      </div>
+    );
   }
 
   const recentSession = sessions?.[0];

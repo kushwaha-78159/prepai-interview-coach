@@ -4,8 +4,9 @@ import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
 import { trpc } from "@/lib/trpc";
 import { useState, useEffect, useRef } from "react";
-import { Loader2, Mic, Send, Square, MessageCircle } from "lucide-react";
+import { Loader2, Send } from "lucide-react";
 import { toast } from "sonner";
+import { VoiceRecorder } from "@/components/VoiceRecorder";
 
 export default function InterviewSession() {
   const { isAuthenticated } = useAuth();
@@ -17,12 +18,9 @@ export default function InterviewSession() {
   const [currentQAId, setCurrentQAId] = useState<number | null>(null);
   const [messages, setMessages] = useState<Array<{ type: "question" | "answer"; text: string }>>([]);
   const [answer, setAnswer] = useState("");
-  const [isRecording, setIsRecording] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [startTime, setStartTime] = useState<number>(0);
   const [elapsedTime, setElapsedTime] = useState(0);
-  const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-  const audioChunksRef = useRef<Blob[]>([]);
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   const { data: session, isLoading: sessionLoading } = trpc.interview.getSession.useQuery(
@@ -33,6 +31,7 @@ export default function InterviewSession() {
   const getNextQuestionMutation = trpc.interview.getNextQuestion.useMutation();
   const submitAnswerMutation = trpc.interview.submitAnswer.useMutation();
   const completeSessionMutation = trpc.interview.completeSession.useMutation();
+  const submitAnswerWithVoiceMutation = trpc.interviewEnhanced.submitAnswerWithVoice.useMutation();
 
   if (!isAuthenticated) {
     navigate("/");
@@ -102,38 +101,8 @@ export default function InterviewSession() {
     }
   };
 
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mediaRecorder = new MediaRecorder(stream);
-      mediaRecorderRef.current = mediaRecorder;
-      audioChunksRef.current = [];
-
-      mediaRecorder.ondataavailable = (event) => {
-        audioChunksRef.current.push(event.data);
-      };
-
-      mediaRecorder.onstop = async () => {
-        const audioBlob = new Blob(audioChunksRef.current, { type: "audio/wav" });
-        // In a real app, you'd send this to Whisper API for transcription
-        // For now, we'll just show a placeholder
-        toast.info("Voice recording captured. Transcription would happen here.");
-      };
-
-      mediaRecorder.start();
-      setIsRecording(true);
-    } catch (error) {
-      toast.error("Failed to access microphone");
-      console.error(error);
-    }
-  };
-
-  const stopRecording = () => {
-    if (mediaRecorderRef.current) {
-      mediaRecorderRef.current.stop();
-      mediaRecorderRef.current.stream.getTracks().forEach((track) => track.stop());
-      setIsRecording(false);
-    }
+  const handleVoiceTranscription = (transcribedText: string) => {
+    setAnswer((prev) => (prev ? `${prev} ${transcribedText}` : transcribedText));
   };
 
   const handleSubmitAnswer = async () => {
@@ -240,29 +209,13 @@ export default function InterviewSession() {
             </div>
 
             {/* Controls */}
-            <div className="flex gap-4">
-              <Button
-                onClick={isRecording ? stopRecording : startRecording}
-                variant={isRecording ? "destructive" : "outline"}
-                className={isRecording ? "border-red-500 text-red-500 hover:bg-red-50" : "border-black"}
-              >
-                {isRecording ? (
-                  <>
-                    <Square className="w-4 h-4 mr-2" />
-                    Stop Recording
-                  </>
-                ) : (
-                  <>
-                    <Mic className="w-4 h-4 mr-2" />
-                    Start Recording
-                  </>
-                )}
-              </Button>
+            <div className="flex gap-4 flex-col">
+              <VoiceRecorder onTranscription={handleVoiceTranscription} disabled={isSubmitting} />
 
               <Button
                 onClick={handleSubmitAnswer}
                 disabled={isSubmitting || !answer.trim()}
-                className="flex-1 bg-black text-white hover:bg-gray-900"
+                className="bg-black text-white hover:bg-gray-900"
               >
                 {isSubmitting ? (
                   <>
