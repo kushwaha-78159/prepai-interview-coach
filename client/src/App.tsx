@@ -4,13 +4,25 @@ import NotFound from "@/pages/NotFound";
 import { Route, Switch } from "wouter";
 import ErrorBoundary from "./components/ErrorBoundary";
 import { ThemeProvider } from "./contexts/ThemeContext";
-import Home from "./pages/Home";
+import Landing from "./pages/Landing";
+import Dashboard from "./pages/Dashboard";
+import Resume from "./pages/Resume";
+import InterviewSetup from "./pages/InterviewSetup";
+import InterviewSession from "./pages/InterviewSession";
+import InterviewReport from "./pages/InterviewReport";
+import InterviewHistory from "./pages/InterviewHistory";
 
 function Router() {
   // make sure to consider if you need authentication for certain routes
   return (
     <Switch>
-      <Route path={"/"} component={Home} />
+      <Route path={"/"} component={Landing} />
+      <Route path={"/dashboard"} component={Dashboard} />
+      <Route path={"/resume"} component={Resume} />
+      <Route path={"/interview/setup"} component={InterviewSetup} />
+      <Route path={"/interview/session/:sessionId"} component={InterviewSession} />
+      <Route path={"/interview/report/:sessionId"} component={InterviewReport} />
+      <Route path={"/interview/history"} component={InterviewHistory} />
       <Route path={"/404"} component={NotFound} />
       {/* Final fallback route */}
       <Route component={NotFound} />
