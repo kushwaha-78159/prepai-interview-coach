@@ -270,6 +270,6 @@ MIT
 
 For issues or questions, please contact the development team or open an issue on GitHub.
 
----
 
-**Built with ❤️ using Manus**
+
+
